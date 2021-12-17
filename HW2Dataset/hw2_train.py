@@ -13,6 +13,7 @@ import cv2
 import shutil
 import os
 
+
 class AIDataset(Dataset):
     def __init__(self, root, train, transform=None):
         self.transform = transform
@@ -60,12 +61,9 @@ class AIDataset(Dataset):
         # Code for data preprocessing
         # Hints for preprocessing: filtering, normalization, cropping, scaling, ...
 
-
-
-
-
         ########## End your code here ##########
         return img
+
 
 def Load():
     train_dataset = AIDataset(root='./Data/', train=True, transform=transforms.ToTensor())
@@ -75,12 +73,13 @@ def Load():
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
     return train_loader, test_loader
 
+
 ########## Edit your code here ##########
 # Code for building neural network
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = torch.nn.Sequential(torch.nn.Conv2d(1 , 2, 9), torch.nn.ReLU(), torch.nn.MaxPool2d(2))
+        self.conv1 = torch.nn.Sequential(torch.nn.Conv2d(1, 2, 9), torch.nn.ReLU(), torch.nn.MaxPool2d(2))
         self.dense = torch.nn.Sequential(torch.nn.Linear(882, 128), torch.nn.ReLU(), torch.nn.Linear(128, 9))
 
     def forward(self, x):
@@ -88,6 +87,8 @@ class Net(nn.Module):
         res = conv1_out.view(conv1_out.size(0), -1)
         out = self.dense(res)
         return F.log_softmax(out, dim=1)
+
+
 ########## End your code here ##########
 
 def update_confusion_matrix(predictions, labels, conf_matrix):
@@ -95,17 +96,18 @@ def update_confusion_matrix(predictions, labels, conf_matrix):
         conf_matrix[l, p] += 1
     return conf_matrix
 
+
 def plot_confusion_matrix(cm, classes, normalize, title='Confusion matrix', cmap=plt.cm.Blues):
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-    
+
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title, fontsize=12)
     plt.colorbar()
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes, fontsize=12)
     plt.yticks(tick_marks, classes, fontsize=12)
-    
+
     plt.axis("equal")
     ax = plt.gca()
     left, right = plt.xlim()
@@ -117,12 +119,14 @@ def plot_confusion_matrix(cm, classes, normalize, title='Confusion matrix', cmap
     fmt = '.2f' if normalize else '.0f'
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], fmt), horizontalalignment="center", color="white" if cm[i, j] > thresh else "black")
+        plt.text(j, i, format(cm[i, j], fmt), horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
 
     plt.tight_layout()
     plt.ylabel('True label', fontsize=12)
     plt.xlabel('Predicted label', fontsize=12)
     plt.show()
+
 
 def Train(epoch):
     correct = 0
@@ -131,17 +135,27 @@ def Train(epoch):
         # Code for model training
         # Hints: forward propagation, loss function, back propagation, network parameter update, ...
 
-
-
-
         ########## End your code here ##########
 
         prediction = output.data.max(1, keepdim=True)[1]
         correct += prediction.eq(target.data.view_as(prediction)).cpu().sum()
 
-        print('\rTrain Epoch: {} [{}/{} ({:.0f}%)] Accuracy: {}/{} ({:.1f}%) Loss: {:.6f}'.format(epoch, batch_idx * batch_size + len(data), len(train_loader.dataset), 
-            100. * (batch_idx + 1) / len(train_loader), correct, batch_idx * batch_size + len(data), 100. * correct / (batch_idx * batch_size + len(data)), loss.item()), end="")
+        print('\rTrain Epoch: {} [{}/{} ({:.0f}%)] Accuracy: {}/{} ({:.1f}%) Loss: {:.6f}'.format(epoch,
+                                                                                                  batch_idx * batch_size + len(
+                                                                                                      data),
+                                                                                                  len(train_loader.dataset),
+                                                                                                  100. * (
+                                                                                                              batch_idx + 1) / len(
+                                                                                                      train_loader),
+                                                                                                  correct,
+                                                                                                  batch_idx * batch_size + len(
+                                                                                                      data),
+                                                                                                  100. * correct / (
+                                                                                                              batch_idx * batch_size + len(
+                                                                                                          data)),
+                                                                                                  loss.item()), end="")
     print('\n')
+
 
 def Test(epoch):
     correct = 0
@@ -152,9 +166,18 @@ def Test(epoch):
         prediction = output.data.max(1, keepdim=True)[1]
         correct += prediction.eq(target.data.view_as(prediction)).cpu().sum()
 
-        print('\rTest  epoch: {} [{}/{} ({:.0f}%)] Accuracy: {}/{} ({:.1f}%) '.format(epoch, batch_idx * batch_size + len(data), len(test_loader.dataset), 
-            100. * (batch_idx + 1) / len(test_loader), correct, batch_idx * batch_size + len(data), 100. * correct / (batch_idx * batch_size + len(data))), end="")
+        print('\rTest  epoch: {} [{}/{} ({:.0f}%)] Accuracy: {}/{} ({:.1f}%) '.format(epoch,
+                                                                                      batch_idx * batch_size + len(
+                                                                                          data),
+                                                                                      len(test_loader.dataset),
+                                                                                      100. * (batch_idx + 1) / len(
+                                                                                          test_loader), correct,
+                                                                                      batch_idx * batch_size + len(
+                                                                                          data), 100. * correct / (
+                                                                                                  batch_idx * batch_size + len(
+                                                                                              data))), end="")
     print('\n')
+
 
 def Output(conf_matrix_normalize):
     if not os.path.exists('./result'):
@@ -187,11 +210,14 @@ def Output(conf_matrix_normalize):
 
         for i in range(len(data)):
             if prediction[i][0] == target[i]:
-                cv2.imwrite('result/train/' + str(prediction[i][0].numpy() + 1) + '/True/' + file_list[i], original_data[i].numpy())
+                cv2.imwrite('result/train/' + str(prediction[i][0].numpy() + 1) + '/True/' + file_list[i],
+                            original_data[i].numpy())
             else:
-                cv2.imwrite('result/train/' + str(prediction[i][0].numpy() + 1) + '/False/' + file_list[i], original_data[i].numpy())
-        
-    plot_confusion_matrix(conf_matrix_train.numpy(), classes=range(1, 10), normalize=conf_matrix_normalize, title='Confusion matrix on training set')
+                cv2.imwrite('result/train/' + str(prediction[i][0].numpy() + 1) + '/False/' + file_list[i],
+                            original_data[i].numpy())
+
+    plot_confusion_matrix(conf_matrix_train.numpy(), classes=range(1, 10), normalize=conf_matrix_normalize,
+                          title='Confusion matrix on training set')
 
     print('Outputting confusion matrix on testing set ...\n')
     for batch_idx, (data, target, file_list, original_data) in enumerate(test_loader):
@@ -203,19 +229,23 @@ def Output(conf_matrix_normalize):
 
         for i in range(len(data)):
             if prediction[i][0] == target[i]:
-                cv2.imwrite('result/test/' + str(prediction[i][0].numpy() + 1) + '/True/' + file_list[i], original_data[i].numpy())
+                cv2.imwrite('result/test/' + str(prediction[i][0].numpy() + 1) + '/True/' + file_list[i],
+                            original_data[i].numpy())
             else:
-                cv2.imwrite('result/test/' + str(prediction[i][0].numpy() + 1) + '/False/' + file_list[i], original_data[i].numpy())
+                cv2.imwrite('result/test/' + str(prediction[i][0].numpy() + 1) + '/False/' + file_list[i],
+                            original_data[i].numpy())
 
-    plot_confusion_matrix(conf_matrix_test.numpy(), classes=range(1, 10), normalize=conf_matrix_normalize, title='Confusion matrix on testing set')
+    plot_confusion_matrix(conf_matrix_test.numpy(), classes=range(1, 10), normalize=conf_matrix_normalize,
+                          title='Confusion matrix on testing set')
+
 
 if __name__ == "__main__":
     model = Net()
     ########## Edit your code here ##########
     # Hyper-parameter adjustment and optimizer initialization
     # Information about optimizer in PyTorch: https://pytorch.org/docs/stable/optim.html & https://pytorch-cn.readthedocs.io/zh/latest/package_references/torch-optim/
-    batch_size = 
-    epoch_num = 
+    batch_size = 10
+    epoch_num = 10
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
     conf_matrix_normalize = True
     ########## End your code here ##########
