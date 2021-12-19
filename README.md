@@ -12,3 +12,5 @@
 - ./MNIST/mnist_vis.py: MNIST数据集的读取和可视化程序示例
 - ./MNIST/mnist_train.py: MNIST数据训练集
 - ./HW2Dataset/hw2_train.py: 学生用手写文字识别训练集
+
+xcopy .\HW2Dataset\Raw_Data\train_Raw_Data\1\*.png .\HW2Dataset\Data\train\ /Y

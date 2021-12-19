@@ -40,10 +40,10 @@ class AIDataset(Dataset):
                 img = cv2.imread(self.data_dir + self.file_list[i], 1)
                 self.original_data[i] = img
                 # add by Max Yu 2021.12.19
-                if self.original_data[i].shape[0] != 50 or self.original_data[i].shape[1] != 50:
-                    self.original_data[i] = self.data[i] = self.targets[i] = None
-                    print("The image {} size is not correct", i)
-                    continue
+                # if self.original_data[i].shape[0] != 50 or self.original_data[i].shape[1] != 50:
+                #     self.original_data[i] = self.data[i] = self.targets[i] = None
+                #     print("The image %s size is not correct" %(self.file_list[i]))
+                #     continue
 
                 img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
                 img = self.Preprocessing(img)
@@ -70,6 +70,8 @@ class AIDataset(Dataset):
         ########## Edit your code here ##########
         # Code for data preprocessing
         # Hints for preprocessing: filtering, normalization, cropping, scaling, ...
+        # add by Max Yu 2021.12.19
+        img = cv2.resize(img, (50, 50), interpolation=cv2.INTER_CUBIC)
 
         ########## End your code here ##########
         return img
@@ -90,15 +92,18 @@ class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         self.conv1 = torch.nn.Sequential(torch.nn.Conv2d(1, 2, 9), torch.nn.ReLU(), torch.nn.MaxPool2d(2))
+        # add by Max Yu 2021.12.19
+        self.conv2 = torch.nn.Sequential(torch.nn.Conv2d(2 , 196, 5),  torch.nn.ReLU(), torch.nn.MaxPool2d(2))
+        self.conv3 = torch.nn.Sequential(torch.nn.Conv2d(196 , 882, 3), torch.nn.Dropout2d(0.7), torch.nn.ReLU(), torch.nn.MaxPool2d(2))
         self.dense = torch.nn.Sequential(torch.nn.Linear(882, 128), torch.nn.ReLU(), torch.nn.Linear(128, 9))
 
     def forward(self, x):
         conv1_out = self.conv1(x)
-        res = conv1_out.view(conv1_out.size(0), -1)
+        conv2_out = self.conv2(conv1_out)
+        conv3_out = self.conv3(conv2_out)
+        res = conv1_out.view(conv3_out.size(0), -1)
         out = self.dense(res)
         return F.log_softmax(out, dim=1)
-
-
 ########## End your code here ##########
 
 def update_confusion_matrix(predictions, labels, conf_matrix):
@@ -129,8 +134,7 @@ def plot_confusion_matrix(cm, classes, normalize, title='Confusion matrix', cmap
     fmt = '.2f' if normalize else '.0f'
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], fmt), horizontalalignment="center",
-                 color="white" if cm[i, j] > thresh else "black")
+        plt.text(j, i, format(cm[i, j], fmt), horizontalalignment="center", color="white" if cm[i, j] > thresh else "black")
 
     plt.tight_layout()
     plt.ylabel('True label', fontsize=12)
@@ -144,8 +148,10 @@ def Train(epoch):
         ########## Edit your code here ##########
         # Code for model training
         # Hints: forward propagation, loss function, back propagation, network parameter update, ...
+        # add by Max Yu 2021.12.19
         output = model(data)
         loss = F.nll_loss(output,target)
+
         optimizer_2.zero_grad()
         optimizer.zero_grad()
         loss.backward()
@@ -157,20 +163,10 @@ def Train(epoch):
         prediction = output.data.max(1, keepdim=True)[1]
         correct += prediction.eq(target.data.view_as(prediction)).cpu().sum()
 
-        print('\rTrain Epoch: {} [{}/{} ({:.0f}%)] Accuracy: {}/{} ({:.1f}%) Loss: {:.6f}'.format(epoch,
-                                                                                                  batch_idx * batch_size + len(
-                                                                                                      data),
-                                                                                                  len(train_loader.dataset),
-                                                                                                  100. * (
-                                                                                                          batch_idx + 1) / len(
-                                                                                                      train_loader),
-                                                                                                  correct,
-                                                                                                  batch_idx * batch_size + len(
-                                                                                                      data),
-                                                                                                  100. * correct / (
-                                                                                                          batch_idx * batch_size + len(
-                                                                                                      data)),
-                                                                                                  loss.item()), end="")
+        print('\rTrain Epoch: {} [{}/{} ({:.0f}%)] Accuracy: {}/{} ({:.1f}%) Loss: {:.6f}'
+              .format(epoch, batch_idx * batch_size + len(data), len(train_loader.dataset),
+              100. * (batch_idx + 1) / len(train_loader), correct, batch_idx * batch_size + len(data),
+              100. * correct / (batch_idx * batch_size + len(data)), loss.item()), end="")
     print('\n')
 
 
@@ -183,16 +179,10 @@ def Test(epoch):
         prediction = output.data.max(1, keepdim=True)[1]
         correct += prediction.eq(target.data.view_as(prediction)).cpu().sum()
 
-        print('\rTest  epoch: {} [{}/{} ({:.0f}%)] Accuracy: {}/{} ({:.1f}%) '.format(epoch,
-                                                                                      batch_idx * batch_size + len(
-                                                                                          data),
-                                                                                      len(test_loader.dataset),
-                                                                                      100. * (batch_idx + 1) / len(
-                                                                                          test_loader), correct,
-                                                                                      batch_idx * batch_size + len(
-                                                                                          data), 100. * correct / (
-                                                                                              batch_idx * batch_size + len(
-                                                                                          data))), end="")
+        print('\rTest Epoch: {} [{}/{} ({:.0f}%)] Accuracy: {}/{} ({:.1f}%) '
+              .format(epoch, batch_idx * batch_size + len(data), len(test_loader.dataset),
+                100. * (batch_idx + 1) / len(test_loader), correct, batch_idx * batch_size + len(data),
+                100. * correct / (batch_idx * batch_size + len(data))), end="")
     print('\n')
 
 
@@ -261,10 +251,11 @@ if __name__ == "__main__":
     ########## Edit your code here ##########
     # Hyper-parameter adjustment and optimizer initialization
     # Information about optimizer in PyTorch: https://pytorch.org/docs/stable/optim.html & https://pytorch-cn.readthedocs.io/zh/latest/package_references/torch-optim/
+    # MDF by Max Yu 2021.12.19
     batch_size = 64
-    epoch_num = 40
-    optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.5)
-    optimizer_2 = optim.SGD(model.parameters(), lr=0.1, momentum=0.5)
+    epoch_num = 128
+    optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.5, weight_decay=0.5)
+    optimizer_2 = optim.SGD(model.parameters(), lr=0.0001, momentum=0.5, weight_decay=0.5)
     conf_matrix_normalize = True
     ########## End your code here ##########
 
