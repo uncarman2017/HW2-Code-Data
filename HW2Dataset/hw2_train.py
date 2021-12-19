@@ -36,12 +36,22 @@ class AIDataset(Dataset):
         self.targets = np.empty((self.dataset_len), dtype='int64')
 
         for i in range(self.dataset_len):
-            img = cv2.imread(self.data_dir + self.file_list[i], 1)
-            self.original_data[i] = img
-            img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-            img = self.Preprocessing(img)
-            self.data[i] = img
-            self.targets[i] = int(self.file_list[i][0]) - 1
+            try:
+                img = cv2.imread(self.data_dir + self.file_list[i], 1)
+                self.original_data[i] = img
+                # add by Max Yu 2021.12.19
+                if self.original_data[i].shape[0] != 50 or self.original_data[i].shape[1] != 50:
+                    self.original_data[i] = self.data[i] = self.targets[i] = None
+                    print("The image {} size is not correct", i)
+                    continue
+
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+                img = self.Preprocessing(img)
+                self.data[i] = img
+                self.targets[i] = int(self.file_list[i][0]) - 1
+            except Exception as err:   # Add by Max Yu 2021.12.19
+                print(err)
+                continue
 
     def __getitem__(self, index):
         data = self.data[index]
@@ -134,6 +144,13 @@ def Train(epoch):
         ########## Edit your code here ##########
         # Code for model training
         # Hints: forward propagation, loss function, back propagation, network parameter update, ...
+        output = model(data)
+        loss = F.nll_loss(output,target)
+        optimizer_2.zero_grad()
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        optimizer_2.step()
 
         ########## End your code here ##########
 
@@ -145,14 +162,14 @@ def Train(epoch):
                                                                                                       data),
                                                                                                   len(train_loader.dataset),
                                                                                                   100. * (
-                                                                                                              batch_idx + 1) / len(
+                                                                                                          batch_idx + 1) / len(
                                                                                                       train_loader),
                                                                                                   correct,
                                                                                                   batch_idx * batch_size + len(
                                                                                                       data),
                                                                                                   100. * correct / (
-                                                                                                              batch_idx * batch_size + len(
-                                                                                                          data)),
+                                                                                                          batch_idx * batch_size + len(
+                                                                                                      data)),
                                                                                                   loss.item()), end="")
     print('\n')
 
@@ -174,8 +191,8 @@ def Test(epoch):
                                                                                           test_loader), correct,
                                                                                       batch_idx * batch_size + len(
                                                                                           data), 100. * correct / (
-                                                                                                  batch_idx * batch_size + len(
-                                                                                              data))), end="")
+                                                                                              batch_idx * batch_size + len(
+                                                                                          data))), end="")
     print('\n')
 
 
@@ -244,9 +261,10 @@ if __name__ == "__main__":
     ########## Edit your code here ##########
     # Hyper-parameter adjustment and optimizer initialization
     # Information about optimizer in PyTorch: https://pytorch.org/docs/stable/optim.html & https://pytorch-cn.readthedocs.io/zh/latest/package_references/torch-optim/
-    batch_size = 10
-    epoch_num = 10
-    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
+    batch_size = 64
+    epoch_num = 40
+    optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.5)
+    optimizer_2 = optim.SGD(model.parameters(), lr=0.1, momentum=0.5)
     conf_matrix_normalize = True
     ########## End your code here ##########
 

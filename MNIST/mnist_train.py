@@ -9,21 +9,35 @@ import numpy as np
 import itertools
 
 
+# 载入MNIST数据集
 def Load():
+    # 载入训练集和测试集数据, MNIST方法中的参数从左到右分别是
+    # root: 数据集文件根路径(规定为MNIST/processed/training.pt,test.pt),
+    # train: True-从训练集取数据, False-从测试集取数据
+    # transform: 一个函数，原始图片作为输入，返回一个转换后的图片
+    # download: True-从互联网上下载数据集，并把数据集放在root目录下. 如果数据集之前下载过，将处理过的数据（minist.py中有相关函数）放在processed文件夹下
     train_dataset = datasets.MNIST(root='./Data/', train=True, transform=transforms.ToTensor(), download=True)
     test_dataset = datasets.MNIST(root='./Data/', train=False, transform=transforms.ToTensor())
 
+    # 创建训练集和测试集数据加载器。组合数据集和采样器，并在数据集上提供单进程或多进程迭代器。参数说明如下：
+    # dataset: 加载数据的数据集
+    # batch_size: 每个批处理加载多少个样本(默认: 1)
+    # shuffle:  True-重新打乱样本数据(默认: False).
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
     return train_loader, test_loader
 
-
+# 构建一个卷积神经网络模型
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
+        # 构建卷积层1,2,3
+        # conv1~3: 使用Sequential类创建一个时序容器,容器中加入卷积核、激活函数ReLU以及最大池化层
+        # Conv2d: 对由多个输入平面组成的输入信号应用二维卷积
         self.conv1 = torch.nn.Sequential(torch.nn.Conv2d(1, 10, 5), torch.nn.ReLU(), torch.nn.MaxPool2d(2))
         self.conv2 = torch.nn.Sequential(torch.nn.Conv2d(10, 20, 5), torch.nn.ReLU(), torch.nn.MaxPool2d(2))
         self.conv3 = torch.nn.Sequential(torch.nn.Conv2d(20, 40, 3), torch.nn.ReLU(), torch.nn.MaxPool2d(2))
+        # 构建两个全连接层
         self.dense = torch.nn.Sequential(torch.nn.Linear(40, 128), torch.nn.ReLU(), torch.nn.Linear(128, 10))
 
     def forward(self, x):
@@ -111,7 +125,7 @@ def Test(epoch):
         output = model(data)
         prediction = output.data.max(1, keepdim=True)[1]
         correct += prediction.eq(target.data.view_as(prediction)).cpu().sum()
-        print('\rTest  epoch: {} [{}/{} ({:.0f}%)] Accuracy: {}/{} ({:.1f}%) '.format(epoch,
+        print('\rTest Epoch: {} [{}/{} ({:.0f}%)] Accuracy: {}/{} ({:.1f}%) '.format(epoch,
                                                                                       batch_idx * batch_size + len(
                                                                                           data),
                                                                                       len(test_loader.dataset),
@@ -152,8 +166,8 @@ def Output(conf_matrix_normalize):
 
 
 if __name__ == "__main__":
-    batch_size = 64
-    epoch_num = 10
+    batch_size = 64  # 批处理记录数量
+    epoch_num = 30  # 训练次数(轮数)
 
     train_loader, test_loader = Load()
 
