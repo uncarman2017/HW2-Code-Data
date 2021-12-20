@@ -1,6 +1,7 @@
 from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
 
+# 读取MNIST的训练集和测试集数据
 train_dataset = datasets.MNIST(root='./Data/', train=True, transform=transforms.ToTensor(), download=True)
 test_dataset = datasets.MNIST(root='./Data/', train=False, transform=transforms.ToTensor())
 

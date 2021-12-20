@@ -14,22 +14,33 @@ import shutil
 import os
 
 
+# 数据集对象构造器
+# 参数:
+# DataSet: 父类对象,pytorch的DataSet类型
 class AIDataset(Dataset):
+    # 类初始化方法,相当于构造函数,参数说明如下
+    # self: 对象本身,构造函数必填参数且必须是第一个
+    # root: 训练集文件所在根路径
+    # train: true-训练集 false-测试集
+    # tranform: 转换器函数，原始图片作为输入，返回一个转换后的图片
     def __init__(self, root, train, transform=None):
         self.transform = transform
         if train:
             self.data_dir = root + 'train/';
-            self.file_list = os.listdir(self.data_dir)
+            self.file_list = os.listdir(self.data_dir)  # 存放数据集文件列表
             self.file_list.sort()
         else:
             self.data_dir = root + 'test/';
             self.file_list = os.listdir(self.data_dir)
             self.file_list.sort()
-
-        img = cv2.imread(self.data_dir + self.file_list[0], 1)
+        # 从文件载入一个图片并返回一个包含图像数据的矩阵对象(读取失败则返回空矩阵), 第二个参数flag设为1(IMREAD_COLOR)表示始终将图片转换为RGB格式
+        img = cv2.imread(self.data_dir + self.file_list[0], cv2.IMREAD_COLOR)
+        # 将图片转换成灰度格式,增强识别效果
         img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        # 进一步进行图像的预处理
         img = self.Preprocessing(img)
 
+        # 读取样本集图片文件的数量
         self.dataset_len = len(self.file_list)
         self.data = np.empty((self.dataset_len, img.shape[0], img.shape[1]), dtype='float32')
         self.original_data = np.empty((self.dataset_len, 50, 50, 3), dtype='float32')
@@ -49,7 +60,7 @@ class AIDataset(Dataset):
                 img = self.Preprocessing(img)
                 self.data[i] = img
                 self.targets[i] = int(self.file_list[i][0]) - 1
-            except Exception as err:   # Add by Max Yu 2021.12.19
+            except Exception as err:  # Add by Max Yu 2021.12.19
                 print(err)
                 continue
 
@@ -77,7 +88,12 @@ class AIDataset(Dataset):
         return img
 
 
+# 载入数据集
 def Load():
+    # 载入训练集和测试集数据, MNIST方法中的参数从左到右分别是
+    # root: 数据集文件根路径(规定为MNIST/processed/training.pt,test.pt),
+    # train: True-从训练集取数据, False-从测试集取数据
+    # transform: 一个函数，原始图片作为输入，返回一个转换后的图片
     train_dataset = AIDataset(root='./Data/', train=True, transform=transforms.ToTensor())
     test_dataset = AIDataset(root='./Data/', train=False, transform=transforms.ToTensor())
 
@@ -93,8 +109,9 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.conv1 = torch.nn.Sequential(torch.nn.Conv2d(1, 2, 9), torch.nn.ReLU(), torch.nn.MaxPool2d(2))
         # add by Max Yu 2021.12.19
-        self.conv2 = torch.nn.Sequential(torch.nn.Conv2d(2 , 196, 5),  torch.nn.ReLU(), torch.nn.MaxPool2d(2))
-        self.conv3 = torch.nn.Sequential(torch.nn.Conv2d(196 , 882, 3), torch.nn.Dropout2d(0.7), torch.nn.ReLU(), torch.nn.MaxPool2d(2))
+        self.conv2 = torch.nn.Sequential(torch.nn.Conv2d(2, 196, 5), torch.nn.ReLU(), torch.nn.MaxPool2d(2))
+        self.conv3 = torch.nn.Sequential(torch.nn.Conv2d(196, 882, 3), torch.nn.Dropout2d(0.7), torch.nn.ReLU(),
+                                         torch.nn.MaxPool2d(2))
         self.dense = torch.nn.Sequential(torch.nn.Linear(882, 128), torch.nn.ReLU(), torch.nn.Linear(128, 9))
 
     def forward(self, x):
@@ -104,6 +121,7 @@ class Net(nn.Module):
         res = conv1_out.view(conv3_out.size(0), -1)
         out = self.dense(res)
         return F.log_softmax(out, dim=1)
+
 ########## End your code here ##########
 
 def update_confusion_matrix(predictions, labels, conf_matrix):
@@ -134,7 +152,8 @@ def plot_confusion_matrix(cm, classes, normalize, title='Confusion matrix', cmap
     fmt = '.2f' if normalize else '.0f'
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], fmt), horizontalalignment="center", color="white" if cm[i, j] > thresh else "black")
+        plt.text(j, i, format(cm[i, j], fmt), horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
 
     plt.tight_layout()
     plt.ylabel('True label', fontsize=12)
@@ -150,7 +169,7 @@ def Train(epoch):
         # Hints: forward propagation, loss function, back propagation, network parameter update, ...
         # add by Max Yu 2021.12.19
         output = model(data)
-        loss = F.nll_loss(output,target)
+        loss = F.nll_loss(output, target)
 
         optimizer_2.zero_grad()
         optimizer.zero_grad()
@@ -165,8 +184,8 @@ def Train(epoch):
 
         print('\rTrain Epoch: {} [{}/{} ({:.0f}%)] Accuracy: {}/{} ({:.1f}%) Loss: {:.6f}'
               .format(epoch, batch_idx * batch_size + len(data), len(train_loader.dataset),
-              100. * (batch_idx + 1) / len(train_loader), correct, batch_idx * batch_size + len(data),
-              100. * correct / (batch_idx * batch_size + len(data)), loss.item()), end="")
+                      100. * (batch_idx + 1) / len(train_loader), correct, batch_idx * batch_size + len(data),
+                      100. * correct / (batch_idx * batch_size + len(data)), loss.item()), end="")
     print('\n')
 
 
@@ -181,8 +200,8 @@ def Test(epoch):
 
         print('\rTest Epoch: {} [{}/{} ({:.0f}%)] Accuracy: {}/{} ({:.1f}%) '
               .format(epoch, batch_idx * batch_size + len(data), len(test_loader.dataset),
-                100. * (batch_idx + 1) / len(test_loader), correct, batch_idx * batch_size + len(data),
-                100. * correct / (batch_idx * batch_size + len(data))), end="")
+                      100. * (batch_idx + 1) / len(test_loader), correct, batch_idx * batch_size + len(data),
+                      100. * correct / (batch_idx * batch_size + len(data))), end="")
     print('\n')
 
 

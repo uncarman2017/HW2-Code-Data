@@ -3,6 +3,8 @@ import os
 import shutil
 
 
+# 清洗和复制原始样本数据
+# add by Max Yu 2021.12.19
 def clean_data():
     cwd = os.getcwd()
     del_file(cwd + "/Data/train/")
@@ -23,6 +25,8 @@ def clean_data():
         print("process finish!")
 
 
+# 清空目标文件夹下的文件
+# add by Max Yu 2021.12.19
 def del_file(path):
     ls = os.listdir(path)
     for i in ls:
@@ -31,6 +35,7 @@ def del_file(path):
             del_file(c_path)
         else:
             os.remove(c_path)
+
 
 if __name__ == "__main__":
     clean_data()
