@@ -216,6 +216,7 @@ def train(epoch_index):
         # 读取每列最大的值作为预测值
         prediction = _model.data.max(1, keepdim=True)[1]
         # 判断预测值和目标值是否一致,计算识别准确的数量
+        # .cpu()方法将数据转移到CPU高速缓存中,返回torch框架中的Tensor对象,.sum()为对返回的Tensor对象求和
         correct += prediction.eq(target.data.view_as(prediction)).cpu().sum()
         # 输出的参数分别是: 样本记录流水号, 已处理样本数/总的样本数, 完成率, 正确识别的样本数/样本总数, 准确率, 损失量
         print('\rTrain Epoch: {} [{}/{} ({:.0f}%)] Accuracy: {}/{} ({:.1f}%) Loss: {:.6f}'
